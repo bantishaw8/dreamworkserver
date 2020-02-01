@@ -1,7 +1,8 @@
 const app = require('express')(),
     bodyParser = require('body-parser'),
     aws = require('aws-sdk'),
-    fs = require('fs');
+    fs = require('fs'),
+    chalk = require('chalk');;
 
 var env = process.env.NODE_ENV || 'development',
     config = require('./configuration')[env];
@@ -35,7 +36,11 @@ var getOperation = function (params) {
             if (err) {
                 reject(err);
             } else {
-                resolve(data);
+                if (data) {
+                    resolve(data);
+                } else {
+                    resolve(false)
+                }
             }
         });
     })
@@ -62,13 +67,26 @@ app.post('/loginUser', (req, res) => {
     }
     return new Promise((resolve, reject) => {
         getOperation(filter).then((result) => {
-            console.log("result,", result)
-            res.send(result)
+            if (Object.keys(result).length == 0) {
+                resolve(true)
+                res.send({ response: "failure", message: `Invalid User` })
+            } else {
+                if (result.Item.password === req.body.password) {
+                    resolve(true)
+                    res.send({ response: "success", message: `Welcome ${result.Item.name}` })
+                } else {
+                    reject(true)
+                    res.send({ response: "failure", message: `Invalid Password` })
+                }
+            }
         }).catch(error => {
-            return reject(null, { response : error})
+            console.log(chalk.red("Error occurred : ", error))
+            reject(error)
         })
     })
 })
 
-app.listen(8000)
+app.listen(8000, () => {
+    console.log(chalk.inverse.green(`Server is listening on Port 8000`));
+});
 
