@@ -8,7 +8,13 @@ var env = process.env.NODE_ENV || 'development',
     config = require('./configuration')[env];
 
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
+});
 
 aws.config.update({
     region: config.dynamodb.region,
@@ -76,6 +82,7 @@ app.post('/loginUser', (req, res) => {
             res.send({ response: "failure", message: `This Number does not exist` })
         } else {
             // Give OTP
+            res.send({response:"success", message : req.body.phone})
         }
     }).catch(error => {
         console.log(chalk.red("Error occurred : ", error))
