@@ -104,6 +104,9 @@ app.post('/register', (req, res) => {
             mobile: req.body.phone
         }
     };
+    if(req.body.referralCode) {
+        putfilter.Item.referralCode = req.body.referralCode
+    }
     let filter = {
         TableName: "loginDetails",
         Key: {
