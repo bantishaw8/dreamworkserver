@@ -82,7 +82,7 @@ app.post('/loginUser', (req, res) => {
             res.send({ response: "failure", message: `This Number does not exist` })
         } else {
             // Give OTP
-            res.send({response:"success", message : req.body.phone})
+            res.send({ response: "success", message: req.body.phone })
         }
     }).catch(error => {
         console.log(chalk.red("Error occurred : ", error))
@@ -104,7 +104,7 @@ app.post('/register', (req, res) => {
             mobile: req.body.phone
         }
     };
-    if(req.body.referralCode) {
+    if (req.body.referralCode) {
         putfilter.Item.referralCode = req.body.referralCode
     }
     let filter = {
@@ -126,6 +126,16 @@ app.post('/register', (req, res) => {
         }).catch(error => {
             console.log(chalk.red("Error in Register Operation :", error))
             res.send({ response: "failure", message: error })
+        })
+})
+
+app.get('/getLandingPage', (req, res) => {
+    let filter = {
+        TableName: "cards"
+    }
+    scanOperation(filter)
+        .then(results => {
+            res.send({ response: "success", message: results.Items })
         })
 })
 
