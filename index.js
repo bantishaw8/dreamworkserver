@@ -52,38 +52,71 @@ var putOperation = function (params) {
             if (err) {
                 reject(err);
             } else {
-                resolve(data);
+                resolve({ response: "success", message: `Account created successfully` });
             }
         });
     })
 };
 
+/**
+ * Request Body
+ * {
+        "phone":89613234490
+    }
+ */
 app.post('/loginUser', (req, res) => {
     let filter = {
         TableName: "loginDetails",
         Key: {
-            mobile: req.body.mobile
+            mobile: req.body.phone
         }
     }
-    return new Promise((resolve, reject) => {
-        getOperation(filter).then((result) => {
-            if (Object.keys(result).length == 0) {
-                resolve(true)
-                res.send({ response: "failure", message: `Invalid User` })
-            } else {
-                if (result.Item.password === req.body.password) {
-                    resolve(true)
-                    res.send({ response: "success", message: `Welcome ${result.Item.name}` })
-                } else {
-                    reject(true)
-                    res.send({ response: "failure", message: `Invalid Password` })
-                }
-            }
-        }).catch(error => {
-            console.log(chalk.red("Error occurred : ", error))
-            reject(error)
-        })
+    getOperation(filter).then((result) => {
+        if (Object.keys(result).length == 0) {
+            res.send({ response: "failure", message: `This Number does not exist` })
+        } else {
+            // Give OTP
+        }
+    }).catch(error => {
+        console.log(chalk.red("Error occurred : ", error))
+        res.send({ response: "failure", message: error })
     })
+})
+
+
+/**
+ * Request Body
+ * {
+        "phone":89613234490
+    }
+ */
+app.post('/register', (req, res) => {
+    let putfilter = {
+        TableName: "loginDetails",
+        Item: {
+            mobile: req.body.phone
+        }
+    };
+    let filter = {
+        TableName: "loginDetails",
+        Key: {
+            mobile: req.body.phone
+        }
+    }
+    getOperation(filter)
+        .then(result => {
+            if (Object.keys(result).length == 0) {
+                //OTP
+                return putOperation(putfilter);
+            } else {
+                return { response: "success", message: `This Number already exists` }
+            }
+        }).then((response) => {
+            return res.send(response)
+        }).catch(error => {
+            console.log(chalk.red("Error in Register Operation :", error))
+            res.send({ response: "failure", message: error })
+        })
 })
 
 app.listen(8000, () => {
