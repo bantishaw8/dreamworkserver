@@ -61,7 +61,6 @@ var putOperation = function (params) {
 /**
  * Request Body
  * {
-        "password" : "123456",
         "phone":89613234490
     }
  */
@@ -76,11 +75,7 @@ app.post('/loginUser', (req, res) => {
         if (Object.keys(result).length == 0) {
             res.send({ response: "failure", message: `This Number does not exist` })
         } else {
-            if (result.Item.password === req.body.password) {
-                res.send({ response: "success", message: `Welcome ${result.Item.firstName} ${result.Item.lastName}` })
-            } else {
-                res.send({ response: "failure", message: `Invalid Password` })
-            }
+            // Give OTP
         }
     }).catch(error => {
         console.log(chalk.red("Error occurred : ", error))
@@ -92,10 +87,6 @@ app.post('/loginUser', (req, res) => {
 /**
  * Request Body
  * {
-        "fname" : "Banti",
-        "sname": "Shaw",
-        "password" : "123456",
-        "email": "bantishaw9@live.com",
         "phone":89613234490
     }
  */
@@ -103,11 +94,7 @@ app.post('/register', (req, res) => {
     let putfilter = {
         TableName: "loginDetails",
         Item: {
-            firstName: req.body.fname,
-            lastName: req.body.sname,
-            mobile: req.body.phone,
-            email: req.body.email,
-            password: req.body.password
+            mobile: req.body.phone
         }
     };
     let filter = {
@@ -119,6 +106,7 @@ app.post('/register', (req, res) => {
     getOperation(filter)
         .then(result => {
             if (Object.keys(result).length == 0) {
+                //OTP
                 return putOperation(putfilter);
             } else {
                 return { response: "success", message: `This Number already exists` }
