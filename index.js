@@ -79,7 +79,7 @@ app.post('/loginUser', (req, res) => {
     }
     getOperation(filter).then((result) => {
         if (Object.keys(result).length == 0) {
-            res.send({ response: "failure", message: `This Number does not exist` })
+            res.send({ response: "failure", message: `Number does not exist` })
         } else {
             // Give OTP
             res.send({ response: "success", message: req.body.phone })
@@ -119,7 +119,7 @@ app.post('/register', (req, res) => {
                 //OTP
                 return putOperation(putfilter);
             } else {
-                return { response: "success", message: `This Number already exists` }
+                return { response: "failure", message: `Number already exists` }
             }
         }).then((response) => {
             return res.send(response)
