@@ -139,6 +139,46 @@ app.get('/getLandingPage', (req, res) => {
         })
 })
 
+/**
+ * Request Body to search Products based on Category
+ *  {
+        "searchItem" : "CURD"
+    }
+ */
+app.post('/searchCategoryProducts', (req, res) => {
+    const params = {
+        TableName: 'products',
+    }
+    return new Promise((resolve, reject) => {
+        scanOperation(params).then(results => {
+            return findElementInArray(results.Items, req.body.searchItem)
+        }).then(filterResults => {
+            if (filterResults.length) {
+                res.send({ response: "success", message: filterResults })
+            } else {
+                res.send({ response: "failure", message: `No Results Found` })
+            }
+        })
+    })
+})
+
+/**
+ * Method to find Produts through filtering
+ * @param {*} arrayItems 
+ * @param {*} findItem 
+ */
+var findElementInArray = function (arrayItems, findItem) {
+    let categogry = [];
+    return new Promise((resolve, reject) => {
+        arrayItems.forEach(result => {
+            if (result.category === findItem) {
+                categogry.push(result)
+            }
+        })
+        resolve(categogry)
+    })
+}
+
 app.listen(8000, () => {
     console.log(chalk.inverse.green(`Server is listening on Port 8000`));
 });
