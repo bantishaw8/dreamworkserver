@@ -154,9 +154,12 @@ app.post('/searchCategoryProducts', (req, res) => {
             return findElementInArray(results.Items, req.body.searchItem)
         }).then(filterResults => {
             if (filterResults.length) {
-                res.send({ response: "success", message: filterResults })
+                res.send({ 
+                    response: "success",
+                    message: filterResults,
+                    productHeadImage: req.body.productHeadImage})
             } else {
-                res.send({ response: "failure", message: `No Results Found` })
+                res.send({ response: "failure", message: `No Stock Available` })
             }
         })
     })
