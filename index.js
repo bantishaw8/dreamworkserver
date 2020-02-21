@@ -2,7 +2,8 @@ const app = require('express')(),
     bodyParser = require('body-parser'),
     aws = require('aws-sdk'),
     fs = require('fs'),
-    chalk = require('chalk');;
+    chalk = require('chalk'),
+    request = require('request');
 
 var env = process.env.NODE_ENV || 'development',
     config = require('./configuration')[env];
@@ -154,10 +155,11 @@ app.post('/searchCategoryProducts', (req, res) => {
             return findElementInArray(results.Items, req.body.searchItem)
         }).then(filterResults => {
             if (filterResults.length) {
-                res.send({ 
+                res.send({
                     response: "success",
                     message: filterResults,
-                    productHeadImage: req.body.productHeadImage})
+                    productHeadImage: req.body.productHeadImage
+                })
             } else {
                 res.send({ response: "failure", message: `No Stock Available` })
             }
@@ -181,6 +183,29 @@ var findElementInArray = function (arrayItems, findItem) {
         resolve(categogry)
     })
 }
+
+app.post('/getGooglePlaces', (req, res) => {
+    const requestObject = {
+        uri: req.body.url,
+        method: "GET",
+        timeout: 10000,
+        followRedirect: true,
+        maxRedirects: 10
+    }
+    let addressList = [];
+    request(requestObject, function (error, response, body) {
+
+        if (error) {
+            throw error;
+        }
+        const resultBody = JSON.parse(body)
+        resultBody.results.forEach(item => {
+            addressList.push(item.name + ", ".concat(item.formatted_address))
+        })
+        res.send({ response: "success", message: addressList })
+    });
+
+})
 
 app.listen(8000, () => {
     console.log(chalk.inverse.green(`Server is listening on Port 8000`));
