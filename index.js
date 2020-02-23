@@ -65,6 +65,18 @@ var putOperation = function (params) {
     })
 };
 
+var updateOperation = function (params) {
+    return new Promise((resolve, reject) => {
+        dynamodb.update(params, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        })
+    })
+}
+
 /**
  * Request Body
  * {
@@ -205,6 +217,61 @@ app.post('/getGooglePlaces', (req, res) => {
         res.send({ response: "success", message: addressList })
     });
 
+})
+
+app.post('/saveGoogleAddress', (req, res) => {
+    const filter = {
+        TableName: "loginDetails",
+        Key: {
+            mobile: req.body.phoneNumber
+        }
+    }
+    getOperation(filter).then(result => {
+        if (Object.keys(result).length == 0) {
+            res.send({ response: "failure", message: `Number does not exist` })
+        } else {
+            if (result.Item.address) {
+                /**
+                 * Update Selected Address field with the new Address and return
+                 */
+            } else {
+                /**
+                 * Create Address object and return
+                 */
+                const insertAddressObject = {
+                    TableName: "loginDetails",
+                    Key: {
+                        mobile: req.body.phoneNumber
+                    },
+                    UpdateExpression: "set address = :addressObject",
+                    ExpressionAttributeValues: {
+                        ":addressObject": req.body.address
+                    },
+                    ReturnValues: "ALL_NEW"
+                }
+                updateOperation(insertAddressObject).then((result) => {
+                    res.send({ response: "success", message: result.Attributes.address })
+                })
+
+            }
+        }
+    })
+})
+
+app.post('/userProfileDetails', (req, res) => { 
+    console.log(req.body)
+    const filter = {
+        TableName: "loginDetails",
+        Key: {
+            mobile: req.body.phone
+        }
+    }
+    getOperation(filter).then(result => {
+        if (Object.keys(result).length == 0) {
+            res.send({ response: "failure", message: `Number does not exist` })
+        } else {
+            res.send({ response: "success", message: result.Item })        }
+    })
 })
 
 app.listen(8000, () => {
