@@ -234,6 +234,21 @@ app.post('/saveGoogleAddress', (req, res) => {
                 /**
                  * Update Selected Address field with the new Address and return
                  */
+                const insertAddressObject = {
+                    TableName: "loginDetails",
+                    Key: {
+                        mobile: req.body.phoneNumber
+                    },
+                    UpdateExpression: "set address.selectedAddress = :addressString",
+                    ExpressionAttributeValues: {
+                        ":addressString": req.body.address.selectedAddress
+                    },
+                    ReturnValues: "ALL_NEW"
+                }
+                updateOperation(insertAddressObject).then((result) => {
+                    res.send({ response: "success", message: result.Attributes.address })
+                })
+
             } else {
                 /**
                  * Create Address object and return
@@ -252,14 +267,12 @@ app.post('/saveGoogleAddress', (req, res) => {
                 updateOperation(insertAddressObject).then((result) => {
                     res.send({ response: "success", message: result.Attributes.address })
                 })
-
             }
         }
     })
 })
 
 app.post('/userProfileDetails', (req, res) => { 
-    console.log(req.body)
     const filter = {
         TableName: "loginDetails",
         Key: {
