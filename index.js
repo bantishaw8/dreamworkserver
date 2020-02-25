@@ -3,7 +3,8 @@ const app = require('express')(),
     aws = require('aws-sdk'),
     fs = require('fs'),
     chalk = require('chalk'),
-    request = require('request');
+    request = require('request'),
+    cryptoRandomString = require('crypto-random-string');
 
 var env = process.env.NODE_ENV || 'development',
     config = require('./configuration')[env];
@@ -272,7 +273,7 @@ app.post('/saveGoogleAddress', (req, res) => {
     })
 })
 
-app.post('/userProfileDetails', (req, res) => { 
+app.post('/userProfileDetails', (req, res) => {
     const filter = {
         TableName: "loginDetails",
         Key: {
@@ -283,8 +284,66 @@ app.post('/userProfileDetails', (req, res) => {
         if (Object.keys(result).length == 0) {
             res.send({ response: "failure", message: `Number does not exist` })
         } else {
-            res.send({ response: "success", message: result.Item })        }
+            res.send({ response: "success", message: result.Item })
+        }
     })
+})
+
+var searchUser = function (phoneNumber) {
+    const filter = {
+        TableName: "loginDetails",
+        Key: {
+            mobile: phoneNumber
+        }
+    }
+    return new Promise((resolve, reject) => {
+        getOperation(filter).then(result => {
+            if (Object.keys(result).length == 0) {
+                reject({ response: "failure", message: `Number does not exist` })
+            } else {
+                resolve(result.Item)
+            }
+        })
+    })
+}
+
+app.post('/saveAddress', (req, res) => {
+    let insertAddressObject = {};
+    searchUser(req.body.phone)
+        .then(result => {
+            req.body.address.id = cryptoRandomString({ length: 10, type: 'base64' });
+            if (result.address.savedAddress && result.address.savedAddress.length) {
+                result.address.savedAddress.push(req.body.address)
+                insertAddressObject = {
+                    TableName: "loginDetails",
+                    Key: {
+                        mobile: req.body.phone
+                    },
+                    UpdateExpression: "set address.savedAddress = :addressObject",
+                    ExpressionAttributeValues: {
+                        ":addressObject": result.address.savedAddress
+                    },
+                    ReturnValues: "ALL_NEW"
+                }
+            } else {
+                insertAddressObject = {
+                    TableName: "loginDetails",
+                    Key: {
+                        mobile: req.body.phone
+                    },
+                    UpdateExpression: "set address.savedAddress = :addressObject",
+                    ExpressionAttributeValues: {
+                        ":addressObject": [req.body.address]
+                    },
+                    ReturnValues: "ALL_NEW"
+                }
+            }
+            updateOperation(insertAddressObject).then((result) => {
+                res.send({ response: "success", message: result.Attributes })
+            })
+        }).catch(error => {
+            console.log("Error : ", error)
+        })
 })
 
 app.listen(8000, () => {
