@@ -346,6 +346,32 @@ app.post('/saveAddress', (req, res) => {
         })
 })
 
+app.post('/deleteAddress', (req, res) => {
+    let insertAddressObject = {};
+    searchUser(req.body.phone)
+        .then(result => {
+            if (result.address.savedAddress && result.address.savedAddress.length) {
+                const filteredData = result.address.savedAddress.filter(item => item.id !== req.body.address.id)
+                insertAddressObject = {
+                    TableName: "loginDetails",
+                    Key: {
+                        mobile: req.body.phone
+                    },
+                    UpdateExpression: "set address.savedAddress = :addressObject",
+                    ExpressionAttributeValues: {
+                        ":addressObject": filteredData
+                    },
+                    ReturnValues: "ALL_NEW"
+                }
+            }
+            updateOperation(insertAddressObject).then((result) => {
+                res.send({ response: "success", message: result.Attributes })
+            })
+        }).catch(error => {
+            console.log("Error : ", error)
+        })
+})
+
 app.listen(8000, () => {
     console.log(chalk.inverse.green(`Server is listening on Port 8000`));
 });
