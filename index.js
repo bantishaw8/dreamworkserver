@@ -312,32 +312,59 @@ app.post('/saveAddress', (req, res) => {
     searchUser(req.body.phone)
         .then(result => {
             req.body.address.id = cryptoRandomString({ length: 10, type: 'base64' });
-            if (result.address.savedAddress && result.address.savedAddress.length) {
-                result.address.savedAddress.push(req.body.address)
-                insertAddressObject = {
-                    TableName: "loginDetails",
-                    Key: {
-                        mobile: req.body.phone
-                    },
-                    UpdateExpression: "set address.savedAddress = :addressObject",
-                    ExpressionAttributeValues: {
-                        ":addressObject": result.address.savedAddress
-                    },
-                    ReturnValues: "ALL_NEW"
+            if (result.address) {
+                /**
+                 * If Saved Location is already stored then add more address in that arrat
+                 */
+                if (result.address.savedAddress && result.address.savedAddress.length) {
+                    result.address.savedAddress.push(req.body.address)
+                    insertAddressObject = {
+                        TableName: "loginDetails",
+                        Key: {
+                            mobile: req.body.phone
+                        },
+                        UpdateExpression: "set address.savedAddress = :addressObject",
+                        ExpressionAttributeValues: {
+                            ":addressObject": result.address.savedAddress
+                        },
+                        ReturnValues: "ALL_NEW"
+                    }
+                } else {
+                    /**
+                     * If there is no saved address then first create the saveAddress property
+                     */
+                    insertAddressObject = {
+                        TableName: "loginDetails",
+                        Key: {
+                            mobile: req.body.phone
+                        },
+                        UpdateExpression: "set address.savedAddress = :addressObject",
+                        ExpressionAttributeValues: {
+                            ":addressObject": [req.body.address]
+                        },
+                        ReturnValues: "ALL_NEW"
+                    }
                 }
             } else {
+                /**
+                 * User has first time entered the App and he ia creating address 
+                 * without selecting the current location
+                 */
                 insertAddressObject = {
                     TableName: "loginDetails",
                     Key: {
                         mobile: req.body.phone
                     },
-                    UpdateExpression: "set address.savedAddress = :addressObject",
+                    UpdateExpression: "set address = :addressObject",
                     ExpressionAttributeValues: {
-                        ":addressObject": [req.body.address]
+                        ":addressObject": {
+                            savedAddress: [req.body.address]
+                        }
                     },
                     ReturnValues: "ALL_NEW"
                 }
             }
+
             updateOperation(insertAddressObject).then((result) => {
                 res.send({ response: "success", message: result.Attributes })
             })
