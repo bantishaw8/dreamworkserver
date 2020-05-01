@@ -4,7 +4,8 @@ const app = require('express')(),
     fs = require('fs'),
     chalk = require('chalk'),
     request = require('request'),
-    cryptoRandomString = require('crypto-random-string');
+    cryptoRandomString = require('crypto-random-string'),
+    helper = require('./helperFunctions.js');
 
 var env = process.env.NODE_ENV || 'development',
     config = require('./configuration')[env];
@@ -26,58 +27,6 @@ aws.config.update({
 })
 var dynamodb = new aws.DynamoDB.DocumentClient();
 
-var scanOperation = function (params) {
-    return new Promise((resolve, reject) => {
-        dynamodb.scan(params, function (err, data) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(data);
-            }
-        });
-    })
-};
-
-var getOperation = function (params) {
-    return new Promise((resolve, reject) => {
-        dynamodb.get(params, function (err, data) {
-            if (err) {
-                reject(err);
-            } else {
-                if (data) {
-                    resolve(data);
-                } else {
-                    resolve(false)
-                }
-            }
-        });
-    })
-};
-
-var putOperation = function (params) {
-    return new Promise((resolve, reject) => {
-        dynamodb.put(params, function (err, data) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve({ response: "success", message: `Account created successfully` });
-            }
-        });
-    })
-};
-
-var updateOperation = function (params) {
-    return new Promise((resolve, reject) => {
-        dynamodb.update(params, (err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(data);
-            }
-        })
-    })
-}
-
 /**
  * Request Body
  * {
@@ -91,7 +40,7 @@ app.post('/loginUser', (req, res) => {
             mobile: req.body.phone
         }
     }
-    getOperation(filter).then((result) => {
+    helper.getOperation(filter).then((result) => {
         if (Object.keys(result).length == 0) {
             res.send({ response: "failure", message: `Number does not exist` })
         } else {
@@ -127,11 +76,11 @@ app.post('/register', (req, res) => {
             mobile: req.body.phone
         }
     }
-    getOperation(filter)
+    helper.getOperation(filter)
         .then(result => {
             if (Object.keys(result).length == 0) {
                 //OTP
-                return putOperation(putfilter);
+                return helper.putOperation(putfilter);
             } else {
                 return { response: "failure", message: `Number already exists` }
             }
@@ -147,7 +96,7 @@ app.get('/getLandingPage', (req, res) => {
     let filter = {
         TableName: "cards"
     }
-    scanOperation(filter)
+    helper.scanOperation(filter)
         .then(results => {
             res.send({ response: "success", message: results.Items })
         })
@@ -164,7 +113,7 @@ app.post('/searchCategoryProducts', (req, res) => {
         TableName: 'products',
     }
     return new Promise((resolve, reject) => {
-        scanOperation(params).then(results => {
+        helper.scanOperation(params).then(results => {
             return findElementInArray(results.Items, req.body.searchItem)
         }).then(filterResults => {
             if (filterResults.length) {
@@ -227,7 +176,7 @@ app.post('/saveGoogleAddress', (req, res) => {
             mobile: req.body.phoneNumber
         }
     }
-    getOperation(filter).then(result => {
+    helper.getOperation(filter).then(result => {
         if (Object.keys(result).length == 0) {
             res.send({ response: "failure", message: `Number does not exist` })
         } else {
@@ -246,7 +195,7 @@ app.post('/saveGoogleAddress', (req, res) => {
                     },
                     ReturnValues: "ALL_NEW"
                 }
-                updateOperation(insertAddressObject).then((result) => {
+                helper.updateOperation(insertAddressObject).then((result) => {
                     res.send({ response: "success", message: result.Attributes.address })
                 })
 
@@ -265,7 +214,7 @@ app.post('/saveGoogleAddress', (req, res) => {
                     },
                     ReturnValues: "ALL_NEW"
                 }
-                updateOperation(insertAddressObject).then((result) => {
+                helper.updateOperation(insertAddressObject).then((result) => {
                     res.send({ response: "success", message: result.Attributes.address })
                 })
             }
@@ -280,7 +229,7 @@ app.post('/userProfileDetails', (req, res) => {
             mobile: req.body.phone
         }
     }
-    getOperation(filter).then(result => {
+    helper.getOperation(filter).then(result => {
         if (Object.keys(result).length == 0) {
             res.send({ response: "failure", message: `Number does not exist` })
         } else {
@@ -289,27 +238,9 @@ app.post('/userProfileDetails', (req, res) => {
     })
 })
 
-var searchUser = function (phoneNumber) {
-    const filter = {
-        TableName: "loginDetails",
-        Key: {
-            mobile: phoneNumber
-        }
-    }
-    return new Promise((resolve, reject) => {
-        getOperation(filter).then(result => {
-            if (Object.keys(result).length == 0) {
-                reject({ response: "failure", message: `Number does not exist` })
-            } else {
-                resolve(result.Item)
-            }
-        })
-    })
-}
-
 app.post('/saveAddress', (req, res) => {
     let insertAddressObject = {};
-    searchUser(req.body.phone)
+    helper.searchUserWhileLogin(req.body.phone)
         .then(result => {
             req.body.address.id = cryptoRandomString({ length: 10, type: 'base64' });
             if (result.address) {
@@ -365,7 +296,7 @@ app.post('/saveAddress', (req, res) => {
                 }
             }
 
-            updateOperation(insertAddressObject).then((result) => {
+            helper.updateOperation(insertAddressObject).then((result) => {
                 res.send({ response: "success", message: result.Attributes })
             })
         }).catch(error => {
@@ -375,7 +306,7 @@ app.post('/saveAddress', (req, res) => {
 
 app.post('/deleteAddress', (req, res) => {
     let insertAddressObject = {};
-    searchUser(req.body.phone)
+    helper.searchUserWhileLogin(req.body.phone)
         .then(result => {
             if (result.address.savedAddress && result.address.savedAddress.length) {
                 const filteredData = result.address.savedAddress.filter(item => item.id !== req.body.address.id)
@@ -391,11 +322,51 @@ app.post('/deleteAddress', (req, res) => {
                     ReturnValues: "ALL_NEW"
                 }
             }
-            updateOperation(insertAddressObject).then((result) => {
+            helper.updateOperation(insertAddressObject).then((result) => {
                 res.send({ response: "success", message: result.Attributes })
             })
         }).catch(error => {
             console.log("Error : ", error)
+        })
+})
+
+app.post('/checkoutCart', (req, res) => {
+    console.log(req.body)
+    let insertAddressObject = {};
+    helper.searchUserWhileLogin(req.body.phone)
+        .then(result => {
+            console.log("user found")
+            const shoppingFilter = {
+                TableName: "shoppingCart",
+                Key: {
+                    mobile: req.body.phone
+                }
+            }
+            return helper.searchUserInShoppingCart(req.body.phone, shoppingFilter)
+        }).then(shoppingResult => {
+            if (shoppingResult.response === 'failure') {
+                /**
+                 * User Cart Is Empty
+                 */
+                let cartData = {
+                    TableName: "shoppingCart",
+                    Item : {
+                        mobile : req.body.phone,
+                        products: req.body.products
+                    }
+                }
+                helper.putOperation(cartData).then( cartResult => {
+                    console.log("cartResult",cartResult)
+                })
+            } else {
+                /**
+                 * Cart is not Empty
+                 */
+
+            }
+        }).catch(error => {
+            console.log("Error : ", error)
+
         })
 })
 
