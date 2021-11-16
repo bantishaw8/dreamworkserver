@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/bantishaw8/dreamworkserver#readme",
   "dependencies": {
-    "aws-sdk": "^2.610.0",
+    "aws-sdk": "^2.814.0",
     "chalk": "^3.0.0",
     "crypto-random-string": "^3.1.0",
     "express": "^4.17.1",
